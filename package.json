@@ -1,0 +1,35 @@
+{
+  "name": "net-peer",
+  "version": "1.0.0",
+  "description": "A P2P multi-directional communication module for exchanging data, built on top of the Node.js net package",
+  "main": "dist/index.js",
+  "exports": {
+    ".": {
+      "import": "./esmodules.mjs",
+      "require": "./commonjs.cjs"
+    }
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/caioreigot/net-peer.git"
+  },
+  "keywords": [
+    "node",
+    "p2p",
+    "net",
+    "tcp"
+  ],
+  "author": "Caio Costa",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/caioreigot/net-peer/issues"
+  },
+  "homepage": "https://github.com/caioreigot/net-peer#readme",
+  "devDependencies": {
+    "@types/node": "^18.11.9",
+    "typescript": "^4.8.4"
+  }
+}
