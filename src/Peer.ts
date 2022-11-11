@@ -237,11 +237,13 @@ export default class Peer {
 
   /** Receive the name of a peer and the port it is listening on */
   private receiveIntroduction = (socket: net.Socket, data: SignedPeerData) => {
+    const { port: clientPort, state: clientState } = data.content;
+
     for (let i = 0; i < this.knownHosts.length; i++) {
       const currentHost = this.knownHosts[i];
 
       // If the port is already known
-      if (currentHost.ip == socket.remoteAddress && currentHost.mainPort === data.content) {
+      if (currentHost.ip == socket.remoteAddress && currentHost.mainPort === clientPort) {
         /* If the name is empty, it is a sign that the server
         in which this peer connected introduced himself */
         if (currentHost.name.length === 0) {
@@ -280,11 +282,11 @@ export default class Peer {
       name: data.senderName,
       ip: socket.remoteAddress || '',
       remotePort: socket.remotePort!,
-      mainPort: data.content
+      mainPort: clientPort
     });
 
     // Invoking onReceiveStateCallback with client peer state
-    this.onReceiveStateCallback?.(data.content.state);
+    this.onReceiveStateCallback?.(clientState);
 
     // Sending the current state to the client
     this.sendStateTo(socket, this.state);
@@ -303,7 +305,10 @@ export default class Peer {
     const data: SignedPeerData = {
       senderName: this.name,
       type: DataType.PEER_INTRODUCTION,
-      content: { port: portImListening, state }
+      content: { 
+        port: portImListening,
+        state,
+      }
     }
 
     this.sendData(socket, data);
