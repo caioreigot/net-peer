@@ -1,6 +1,6 @@
 /// <reference types="node" />
 import { Socket } from 'net';
-export declare type ReceiveConnectionCallback = (peerName: string, socket: Socket) => void;
+export declare type ReceiveConnectionCallback = (peerName: string, state: any, socket: Socket) => void;
 export declare type ReceiveStateCallback = (state: any) => void;
 export declare type DisconnectCallback = (host: Host, socket: Socket) => void;
 export declare type DataCallback = (data: PeerData, socket: Socket) => void;

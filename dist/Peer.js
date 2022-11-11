@@ -213,7 +213,7 @@ class Peer {
         }
         /* Call the onReceiveConnection callback
         because the peer received a connection */
-        this.onReceiveConnectionCallback?.(data.senderName, socket);
+        this.onReceiveConnectionCallback?.(data.senderName, this.state, socket);
         /* This peer sends all hosts that knows so
         that the other peer can also connect to the
         other network peers */
