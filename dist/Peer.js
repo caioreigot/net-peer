@@ -21,6 +21,7 @@ class Peer {
     /** Array of tasks that will be executed in queue (first in first out) */
     taskQueue = [];
     onReceiveConnectionCallback;
+    onReceiveStateCallback;
     onDisconnectCallback;
     onDataCallback;
     constructor(name, state = {}) {
@@ -181,6 +182,7 @@ class Peer {
     /** Set the state received by another peer */
     receiveState = (data) => {
         this.state = data.content;
+        this.onReceiveStateCallback?.(data);
     };
     /** Receive the name of a peer and the port it is listening on */
     receiveIntroduction = (socket, data) => {
@@ -302,6 +304,10 @@ class Peer {
     /** The given callback is called every time this peer receives a connection */
     onReceiveConnection(callback) {
         this.onReceiveConnectionCallback = callback;
+    }
+    /** The given callback is called every time this peer updates its own state */
+    onReceiveState(callback) {
+        this.onReceiveStateCallback = callback;
     }
     /** The given callback is called every time a peer disconnects from the network */
     onDisconnect(callback) {
