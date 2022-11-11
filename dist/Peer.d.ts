@@ -1,5 +1,5 @@
 import net from 'net';
-import { ReceiveConnectionCallback, ReceiveStateCallback, DisconnectCallback, DataCallback, PeerData } from './types.js';
+import { ReceiveConnectionCallback, DisconnectCallback, DataCallback, PeerData } from './types.js';
 export default class Peer {
     /** State that will be shared among all peers */
     state: any;
@@ -7,8 +7,6 @@ export default class Peer {
     name: string;
     /** Port on which this peer will listen for connections */
     port: number;
-    /** Boolean that defines whether debug mode is active or not */
-    private isDebugEnabled;
     /** TCP server of this peer */
     private server;
     /** Array containing all connections established by this peer */
@@ -18,10 +16,9 @@ export default class Peer {
     /** Array of tasks that will be executed in queue (first in first out) */
     private taskQueue;
     private onReceiveConnectionCallback;
-    private onReceiveStateCallback;
     private onDisconnectCallback;
     private onDataCallback;
-    constructor(name: string, state?: any, debugMode?: boolean);
+    constructor(name: string, state?: any);
     /**
      * Open the server for this peer on the given port
      * @returns {Promise<number>} Returns a Promise that resolves
@@ -60,14 +57,11 @@ export default class Peer {
     /** Send data to a single peer */
     sendData: (socket: net.Socket, data: PeerData) => void;
     /** Send data to all known peers (this one is not included) */
-    broadcastData: (data: PeerData) => void;
-    broadcastState: (state: any) => void;
+    broadcast: (type: string, content: any) => void;
     private listenClientData;
     private addSocketListeners;
     /** The given callback is called every time this peer receives a connection */
     onReceiveConnection(callback: ReceiveConnectionCallback): void;
-    /** The given callback is called every time this peer updates its own state */
-    onReceiveState(callback: ReceiveStateCallback): void;
     /** The given callback is called every time a peer disconnects from the network */
     onDisconnect(callback: DisconnectCallback): void;
     /** The given callback is called every time some data is transmitted to this peer */

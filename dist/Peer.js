@@ -12,8 +12,6 @@ class Peer {
     name;
     /** Port on which this peer will listen for connections */
     port = 0;
-    /** Boolean that defines whether debug mode is active or not */
-    isDebugEnabled;
     /** TCP server of this peer */
     server = null;
     /** Array containing all connections established by this peer */
@@ -23,13 +21,11 @@ class Peer {
     /** Array of tasks that will be executed in queue (first in first out) */
     taskQueue = [];
     onReceiveConnectionCallback;
-    onReceiveStateCallback;
     onDisconnectCallback;
     onDataCallback;
-    constructor(name, state = {}, debugMode = false) {
+    constructor(name, state = {}) {
         this.name = name;
         this.state = state;
-        this.isDebugEnabled = debugMode;
     }
     /**
      * Open the server for this peer on the given port
@@ -185,7 +181,6 @@ class Peer {
     /** Set the state received by another peer */
     receiveState = (data) => {
         this.state = data.content;
-        this.onReceiveStateCallback?.(data);
     };
     /** Receive the name of a peer and the port it is listening on */
     receiveIntroduction = (socket, data) => {
@@ -251,22 +246,15 @@ class Peer {
         }
     };
     /** Send data to all known peers (this one is not included) */
-    broadcastData = (data) => {
-        this.connections.forEach((socket) => {
-            this.sendData(socket, data);
-        });
-        if (this.isDebugEnabled) {
-            showDebugMessage('data broadcasted ->', JSON.stringify(data));
-        }
-    };
-    /* Sends the state of this peer to the other peers,
-    that will overwrite the state itself with the received */
-    broadcastState = (state) => {
-        const data = {
-            type: types_js_1.DataType.STATE,
-            content: state,
+    broadcast = (type, content) => {
+        const dataToBroadcast = {
+            senderName: this.name,
+            type,
+            content,
         };
-        this.broadcastData(data);
+        this.connections.forEach((socket) => {
+            this.sendData(socket, dataToBroadcast);
+        });
     };
     /* Listens to the data sent by the customer
     Note: the messages are always transmitted in
@@ -280,9 +268,6 @@ class Peer {
                 .split(/\r?\n/)
                 .filter(json => json.length !== 0);
             jsonDatas.forEach(jsonData => {
-                if (this.isDebugEnabled) {
-                    showDebugMessage('data received ->', jsonData);
-                }
                 const parsedData = JSON.parse(jsonData);
                 switch (parsedData.type) {
                     case types_js_1.DataType.STATE:
@@ -305,15 +290,9 @@ class Peer {
     addSocketListeners = (socket) => {
         socket.setEncoding('utf8');
         socket.on('close', (hadError) => {
-            if (this.isDebugEnabled) {
-                showDebugMessage(`${socket.remoteAddress ?? 'unknown peer'} -> "close" event triggered. Had error: ${hadError}`);
-            }
             this.handleDisconnection(socket);
         });
         socket.on('end', () => {
-            if (this.isDebugEnabled) {
-                showDebugMessage(`${socket.remoteAddress ?? 'unknown peer'} -> "end" event triggered.`);
-            }
             this.handleDisconnection(socket);
         });
         /* Adds a listen to hear when
@@ -323,10 +302,6 @@ class Peer {
     /** The given callback is called every time this peer receives a connection */
     onReceiveConnection(callback) {
         this.onReceiveConnectionCallback = callback;
-    }
-    /** The given callback is called every time this peer updates its own state */
-    onReceiveState(callback) {
-        this.onReceiveStateCallback = callback;
     }
     /** The given callback is called every time a peer disconnects from the network */
     onDisconnect(callback) {
@@ -338,7 +313,3 @@ class Peer {
     }
 }
 exports.default = Peer;
-function showDebugMessage(message, ...args) {
-    console.log('[DEBUG]', message, ...args);
-    console.log();
-}
