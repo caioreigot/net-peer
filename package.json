@@ -1,6 +1,6 @@
 {
-  "name": "net-peer",
-  "version": "1.0.0",
+  "name": "@caioreigot/net-peer",
+  "version": "1.1.1",
   "description": "A P2P multi-directional communication module for exchanging data, built on top of the Node.js net package",
   "main": "dist/index.js",
   "exports": {
@@ -10,7 +10,7 @@
     }
   },
   "scripts": {
-    "build": "tsc"
+    "build": "rm -rf dist/ && tsc"
   },
   "repository": {
     "type": "git",

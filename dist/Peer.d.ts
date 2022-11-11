@@ -15,6 +15,8 @@ export default class Peer {
     private connections;
     /** Array of all hosts known to this peer */
     private knownHosts;
+    /** Array of tasks that will be executed in queue (first in first out) */
+    private taskQueue;
     private onReceiveConnectionCallback;
     private onReceiveStateCallback;
     private onDisconnectCallback;
@@ -40,8 +42,7 @@ export default class Peer {
      * @returns {Promise<void>} Returns a Promise that is resolved if
      * the connection was successfully established or rejected otherwise
     */
-    connectTo: (host: string, port: number, timeoutInSeconds?: number) => Promise<void>;
-    private addKnownHost;
+    connect: (host: string, port: number, timeoutInSeconds?: number) => Promise<void>;
     private addConnection;
     /** Checks if the given host is among the known hosts array */
     private isKnownHost;
@@ -60,7 +61,7 @@ export default class Peer {
     sendData: (socket: net.Socket, data: PeerData) => void;
     /** Send data to all known peers (this one is not included) */
     broadcastData: (data: PeerData) => void;
-    broadcastState: (state: any, senderName: string) => void;
+    broadcastState: (state: any) => void;
     private listenClientData;
     private addSocketListeners;
     /** The given callback is called every time this peer receives a connection */
