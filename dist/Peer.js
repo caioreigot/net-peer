@@ -181,8 +181,9 @@ class Peer {
     };
     /** Set the state received by another peer */
     receiveState = (data) => {
-        this.state = data.content;
-        this.onReceiveStateCallback?.(data);
+        const state = data.content;
+        this.state = state;
+        this.onReceiveStateCallback?.(state);
     };
     /** Receive the name of a peer and the port it is listening on */
     receiveIntroduction = (socket, data) => {

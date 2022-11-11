@@ -230,8 +230,9 @@ export default class Peer {
 
   /** Set the state received by another peer */
   private receiveState = (data: PeerData) => {
-    this.state = data.content;
-    this.onReceiveStateCallback?.(data);
+    const state = data.content;
+    this.state = state;
+    this.onReceiveStateCallback?.(state);
   }
 
   /** Receive the name of a peer and the port it is listening on */
