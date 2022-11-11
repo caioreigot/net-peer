@@ -1,6 +1,6 @@
 import { Socket } from 'net';
 
-export type ReceiveConnectionCallback = (peerName: string, state: any, socket: Socket) => void;
+export type ReceiveConnectionCallback = (peerName: string, socket: Socket) => void;
 export type ReceiveStateCallback = (state: any) => void;
 export type DisconnectCallback = (host: Host, socket: Socket) => void;
 export type DataCallback = (data: PeerData, socket: Socket) => void;

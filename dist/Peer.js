@@ -39,7 +39,7 @@ class Peer {
             this.server = net_1.default.createServer((socket) => {
                 this.addConnection(socket);
                 this.addSocketListeners(socket);
-                this.introduceMyselfTo(socket, this.port);
+                this.introduceMyselfTo(socket, this.port, this.state);
             });
             const server = this.server.listen(port, () => {
                 /* The port passed as a parameter in the listen can be 0,
@@ -115,7 +115,7 @@ class Peer {
                     }
                     this.addConnection(socket);
                     this.addSocketListeners(socket);
-                    this.introduceMyselfTo(socket, this.port);
+                    this.introduceMyselfTo(socket, this.port, this.state);
                     // Removing the established timeout
                     socket.setTimeout(0);
                     resolve();
@@ -213,7 +213,7 @@ class Peer {
         }
         /* Call the onReceiveConnection callback
         because the peer received a connection */
-        this.onReceiveConnectionCallback?.(data.senderName, this.state, socket);
+        this.onReceiveConnectionCallback?.(data.senderName, socket);
         /* This peer sends all hosts that knows so
         that the other peer can also connect to the
         other network peers */
@@ -225,6 +225,8 @@ class Peer {
             remotePort: socket.remotePort,
             mainPort: data.content
         });
+        // Invoking onReceiveStateCallback with client peer state
+        this.onReceiveStateCallback?.(data.content.state);
         // Sending the current state to the client
         this.sendStateTo(socket, this.state);
     };
@@ -232,11 +234,11 @@ class Peer {
         socket.destroy(new Error(errorMessage));
     }
     /** Send this peer's server name and port to another peer */
-    introduceMyselfTo = (socket, portImListening) => {
+    introduceMyselfTo = (socket, portImListening, state) => {
         const data = {
             senderName: this.name,
             type: types_js_1.DataType.PEER_INTRODUCTION,
-            content: portImListening
+            content: { port: portImListening, state }
         };
         this.sendData(socket, data);
     };
@@ -273,9 +275,6 @@ class Peer {
             jsonDatas.forEach(jsonData => {
                 const parsedData = JSON.parse(jsonData);
                 switch (parsedData.type) {
-                    case types_js_1.DataType.STATE:
-                        this.receiveState(parsedData);
-                        break;
                     case types_js_1.DataType.KNOWN_HOSTS:
                         this.receiveKnownHosts(parsedData);
                         break;

@@ -48,7 +48,7 @@ export default class Peer {
       this.server = net.createServer((socket: net.Socket) => {
         this.addConnection(socket);
         this.addSocketListeners(socket);
-        this.introduceMyselfTo(socket, this.port);
+        this.introduceMyselfTo(socket, this.port, this.state);
       });
 
       const server = this.server.listen(port, () => {
@@ -150,7 +150,7 @@ export default class Peer {
 
           this.addConnection(socket);
           this.addSocketListeners(socket);
-          this.introduceMyselfTo(socket, this.port);
+          this.introduceMyselfTo(socket, this.port, this.state);
 
           // Removing the established timeout
           socket.setTimeout(0);
@@ -268,7 +268,7 @@ export default class Peer {
 
     /* Call the onReceiveConnection callback
     because the peer received a connection */
-    this.onReceiveConnectionCallback?.(data.senderName, this.state, socket);
+    this.onReceiveConnectionCallback?.(data.senderName, socket);
 
     /* This peer sends all hosts that knows so
     that the other peer can also connect to the
@@ -283,6 +283,9 @@ export default class Peer {
       mainPort: data.content
     });
 
+    // Invoking onReceiveStateCallback with client peer state
+    this.onReceiveStateCallback?.(data.content.state);
+
     // Sending the current state to the client
     this.sendStateTo(socket, this.state);
   }
@@ -294,12 +297,13 @@ export default class Peer {
   /** Send this peer's server name and port to another peer */
   private introduceMyselfTo = (
     socket: net.Socket,
-    portImListening: number
+    portImListening: number,
+    state: any,
   ) => {
     const data: SignedPeerData = {
       senderName: this.name,
       type: DataType.PEER_INTRODUCTION,
-      content: portImListening
+      content: { port: portImListening, state }
     }
 
     this.sendData(socket, data);
@@ -345,9 +349,6 @@ export default class Peer {
         const parsedData = JSON.parse(jsonData);
 
         switch (parsedData.type) {
-          case DataType.STATE:
-            this.receiveState(parsedData);
-            break;
           case DataType.KNOWN_HOSTS:
             this.receiveKnownHosts(parsedData);
             break;
