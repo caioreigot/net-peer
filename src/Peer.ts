@@ -1,6 +1,7 @@
 import net from 'net';
 import {
   ReceiveConnectionCallback,
+  ReceiveStateCallback,
   DisconnectCallback,
   DataCallback,
   DataType,
@@ -27,6 +28,7 @@ export default class Peer {
   private taskQueue: Promise<void>[] = [];
 
   private onReceiveConnectionCallback: ReceiveConnectionCallback | undefined;
+  private onReceiveStateCallback: ReceiveStateCallback | undefined;
   private onDisconnectCallback: DisconnectCallback | undefined;
   private onDataCallback: DataCallback | undefined;
 
@@ -229,6 +231,7 @@ export default class Peer {
   /** Set the state received by another peer */
   private receiveState = (data: PeerData) => {
     this.state = data.content;
+    this.onReceiveStateCallback?.(data);
   }
 
   /** Receive the name of a peer and the port it is listening on */
@@ -379,6 +382,11 @@ export default class Peer {
   /** The given callback is called every time this peer receives a connection */
   onReceiveConnection(callback: ReceiveConnectionCallback) {
     this.onReceiveConnectionCallback = callback;
+  }
+
+  /** The given callback is called every time this peer updates its own state */
+  onReceiveState(callback: ReceiveStateCallback) {
+    this.onReceiveStateCallback = callback;
   }
 
   /** The given callback is called every time a peer disconnects from the network */
