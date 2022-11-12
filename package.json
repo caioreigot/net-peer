@@ -1,6 +1,6 @@
 {
   "name": "net-peer",
-  "version": "1.4.0",
+  "version": "2.0.0",
   "description": "A P2P multi-directional communication module for exchanging data, built on top of the Node.js net package",
   "main": "dist/index.js",
   "exports": {

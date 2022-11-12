@@ -6,27 +6,23 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const net_1 = __importDefault(require("net"));
 const types_js_1 = require("./types.js");
 class Peer {
-    /** State that will be shared among all peers */
-    state;
     /** Unique peer name */
     name;
     /** Port on which this peer will listen for connections */
     port = 0;
+    /** State that will be shared among all peers */
+    network = { hosts: [], state: null };
     /** TCP server of this peer */
     server = null;
     /** Array containing all connections established by this peer */
     connections = [];
-    /** Array of all hosts known to this peer */
-    knownHosts = [];
-    /** Array of tasks that will be executed in queue (first in first out) */
-    taskQueue = [];
     onReceiveConnectionCallback;
-    onReceiveStateCallback;
+    onEnterNetworkCallback;
     onDisconnectCallback;
     onDataCallback;
     constructor(name, state = {}) {
         this.name = name;
-        this.state = state;
+        this.network.state = state;
     }
     /**
      * Open the server for this peer on the given port
@@ -36,10 +32,11 @@ class Peer {
     */
     listen = async (port = 0) => {
         return new Promise((resolve, reject) => {
+            /* Causes this peer to listen for other connections ("open the server") and pass
+            a second-parameter callback that is invoked whenever it receives a connection */
             this.server = net_1.default.createServer((socket) => {
-                this.addConnection(socket);
+                this.connections.push(socket);
                 this.addSocketListeners(socket);
-                this.introduceMyselfTo(socket, this.port, this.state);
             });
             const server = this.server.listen(port, () => {
                 /* The port passed as a parameter in the listen can be 0,
@@ -52,44 +49,22 @@ class Peer {
                 .on('error', reject);
         });
     };
-    handleDisconnection = (socket) => {
-        this.forgetConnection(socket);
-    };
     /** Remove socket from arrays of known connections and hosts */
-    forgetConnection = (socket) => {
+    handleDisconnection = (socket) => {
         /* Assign a new array to this.connections,
         however, without the socket that disconnected */
         this.connections = this.connections.filter(conn => {
             return conn !== socket;
         });
-        this.knownHosts.forEach(host => {
+        this.network.hosts.forEach(host => {
             const isKnownPort = (host.remotePort === socket.remotePort
                 || host.mainPort === socket.remotePort);
             if ((host.ip === socket.remoteAddress) && isKnownPort) {
-                const indexToRemove = this.knownHosts.indexOf(host);
-                this.knownHosts.splice(indexToRemove, 1);
+                const indexToRemove = this.network.hosts.indexOf(host);
+                this.network.hosts.splice(indexToRemove, 1);
                 this.onDisconnectCallback?.(host, socket);
             }
         });
-    };
-    /** Send hosts known to this
-    peer to the client peer */
-    sendKnownHostsTo = (socket, knownHosts) => {
-        const data = {
-            senderName: this.name,
-            type: types_js_1.DataType.KNOWN_HOSTS,
-            content: knownHosts
-        };
-        this.sendData(socket, data);
-    };
-    /** Send the state of this peer to the client peer */
-    sendStateTo = (socket, state) => {
-        const data = {
-            senderName: this.name,
-            type: types_js_1.DataType.STATE,
-            content: state
-        };
-        this.sendData(socket, data);
     };
     /**
      * Try to connect to a peer using the given ip and port
@@ -100,22 +75,25 @@ class Peer {
         return new Promise((resolve, reject) => {
             const connect = () => {
                 const socket = net_1.default.createConnection({ port, host }, () => {
-                    /* If the host this peer is connecting to
-                    is not known, then add to known array
+                    /* If this is the first connection from this peer, it
+                    asks the network information for the peer server */
+                    if (this.network.hosts.length === 0) {
+                        this.sendData(socket, {
+                            type: types_js_1.DataType.REQUEST_NETWORK_INFORMATION,
+                            content: null,
+                        });
+                    }
+                    /* Add the server peer to the known hosts list
                     Note: the name is unknown, only after the server
                     present that he will be assigned */
-                    const hostImConnected = {
-                        name: '',
+                    this.network.hosts.push({
                         ip: host,
                         remotePort: socket.remotePort,
                         mainPort: port,
-                    };
-                    if (!this.isKnownHost(hostImConnected)) {
-                        this.knownHosts.push(hostImConnected);
-                    }
-                    this.addConnection(socket);
+                    });
+                    this.connections.push(socket);
                     this.addSocketListeners(socket);
-                    this.introduceMyselfTo(socket, this.port, this.state);
+                    this.sendPresentation(socket, this.port);
                     // Removing the established timeout
                     socket.setTimeout(0);
                     resolve();
@@ -134,133 +112,89 @@ class Peer {
                 : this.listen().then(connect);
         });
     };
-    addConnection = (socket) => {
-        this.connections.push(socket);
-    };
-    /** Checks if the given host is among the known hosts array */
-    isKnownHost = (host) => {
-        const hostFound = this.knownHosts.find((knownHost) => {
-            const isKnownIp = knownHost.ip === host.ip.slice(7) || knownHost.ip === host.ip;
-            const isKnownPort = knownHost.mainPort === host.mainPort;
-            const isKnownName = knownHost.name === host.name;
-            return (isKnownIp && isKnownPort) || isKnownName;
-        });
-        return hostFound !== undefined;
-    };
-    /** Checks if the name passed is being used by some known host */
-    isNameUsed = (name) => {
-        for (let i = 0; i < this.knownHosts.length; i++) {
-            if (this.knownHosts[i].name === name) {
-                return true;
-            }
+    /** Receives the network information from another peer */
+    receiveNetworkInformation = async (networkInformation) => {
+        const { hosts, state } = networkInformation;
+        this.network.state = state;
+        /* It connects to all hosts on the network and only after that,
+        invokes the onEnterNetwork callback if it has been provided */
+        for (let i = 0; i < hosts.length; i++) {
+            const host = hosts[i];
+            await this.connect(host.ip, host.mainPort);
         }
-        // Lastly, if the name is not the same as this peer, then return false
-        return name === this.name;
-    };
-    /** Receives known hosts from another peer */
-    receiveKnownHosts = (data) => {
-        const task = async () => {
-            for (let i = 0; i < data.content.length; i++) {
-                const host = data.content[i];
-                // If the host is not known
-                if (!this.isKnownHost(host)) {
-                    // Connects to the new host
-                    await this.connect(host.ip, host.mainPort);
-                    this.knownHosts.push(host);
-                }
-            }
-        };
-        const jobsQueueLength = this.taskQueue.length;
-        const callAndQueue = () => this.taskQueue.push(task());
-        /* If the queue is empty, call the task and queue it
-        If it is not empty, wait for the last task to finish and do the same */
-        jobsQueueLength === 0
-            ? callAndQueue()
-            : this.taskQueue[jobsQueueLength - 1]
-                .then(callAndQueue);
-    };
-    /** Set the state received by another peer */
-    receiveState = (data) => {
-        const state = data.content;
-        this.state = state;
-        this.onReceiveStateCallback?.(state);
+        this.onEnterNetworkCallback?.(state);
     };
     /** Receive the name of a peer and the port it is listening on */
-    receiveIntroduction = (socket, data) => {
-        const { port: clientPort, state: clientState } = data.content;
-        for (let i = 0; i < this.knownHosts.length; i++) {
-            const currentHost = this.knownHosts[i];
-            // If the port is already known
-            if (currentHost.ip == socket.remoteAddress && currentHost.mainPort === clientPort) {
-                /* If the name is empty, it is a sign that the server
-                in which this peer connected introduced himself */
-                if (currentHost.name.length === 0) {
-                    currentHost.name = data.senderName;
-                    /* Return as the server is already known and
-                    this peer has already configured its listeners */
-                    return;
-                }
+    receivePresentation = (socket, clientName, clientPort) => {
+        for (let i = 0; i < this.network.hosts.length; i++) {
+            const currentHost = this.network.hosts[i];
+            /* If the ip:port is already known
+            && If the name is empty, it is a sign that the server
+            in which this peer connected introduced himself */
+            if (currentHost.ip == socket.remoteAddress
+                && currentHost.mainPort === clientPort
+                && !currentHost.name) {
+                currentHost.name = clientName;
+                /* Return as the server is already known and
+                this peer has already configured its listeners */
+                return;
             }
         }
         // If the name is being used within the network, it won't let you connect
-        if (this.isNameUsed(data.senderName)) {
-            const closedConnectionPacket = {
-                type: types_js_1.DataType.CLOSED_CONNECTION,
-                content: 'Nickname is already being used.'
-            };
-            this.sendData(socket, closedConnectionPacket);
+        if (this.isNameUsed(clientName)) {
+            this.sendData(socket, {
+                type: types_js_1.DataType.CONNECTION_CLOSED,
+                content: { message: 'Nickname is already being used.' },
+            });
             socket.end();
             return;
         }
         /* Call the onReceiveConnection callback
         because the peer received a connection */
-        this.onReceiveConnectionCallback?.(data.senderName, socket);
-        /* This peer sends all hosts that knows so
-        that the other peer can also connect to the
-        other network peers */
-        this.sendKnownHostsTo(socket, this.knownHosts);
+        this.onReceiveConnectionCallback?.(clientName, socket);
+        // Presents itself back to the connecting peer
+        this.sendPresentation(socket, this.port);
         // Add peer to known hosts array
-        this.knownHosts.push({
-            name: data.senderName,
-            ip: socket.remoteAddress || '',
+        this.network.hosts.push({
+            name: clientName,
+            ip: socket.remoteAddress,
             remotePort: socket.remotePort,
             mainPort: clientPort
         });
-        // Invoking onReceiveStateCallback with client peer state
-        this.onReceiveStateCallback?.(clientState);
-        // Sending the current state to the client
-        this.sendStateTo(socket, this.state);
     };
+    /** Send the network state to the client peer */
+    sendNetworkInformation(socket, network) {
+        this.sendData(socket, {
+            type: types_js_1.DataType.NETWORK_INFORMATION,
+            content: { network },
+        });
+    }
     destroySocket(socket, errorMessage) {
         socket.destroy(new Error(errorMessage));
     }
     /** Send this peer's server name and port to another peer */
-    introduceMyselfTo = (socket, portImListening, state) => {
-        const data = {
-            senderName: this.name,
-            type: types_js_1.DataType.PEER_INTRODUCTION,
-            content: {
-                port: portImListening,
-                state,
-            }
-        };
-        this.sendData(socket, data);
+    sendPresentation = (socket, port) => {
+        this.sendData(socket, {
+            type: types_js_1.DataType.PRESENTATION,
+            content: { port },
+        });
     };
     /** Send data to a single peer */
     sendData = (socket, data) => {
+        const signedPackage = {
+            senderName: this.name,
+            type: data.type,
+            content: data.content,
+        };
         // Concatenating with a '\n' to mark end of JSON in buffer
-        const jsonData = JSON.stringify(data).concat('\n');
+        const json = JSON.stringify(signedPackage).concat('\n');
         if (!socket.writableEnded) {
-            socket.write(jsonData);
+            socket.write(json);
         }
     };
     /** Send data to all known peers (this one is not included) */
     broadcast = (type, content) => {
-        const dataToBroadcast = {
-            senderName: this.name,
-            type,
-            content,
-        };
+        const dataToBroadcast = { type, content };
         this.connections.forEach((socket) => {
             this.sendData(socket, dataToBroadcast);
         });
@@ -273,23 +207,34 @@ class Peer {
             const buffer = bufferData.toString();
             /* If there is more than one Json in the buffer,
             they are separated by the line break */
-            const jsonDatas = buffer
+            const jsons = buffer
                 .split(/\r?\n/)
                 .filter(json => json.length !== 0);
-            jsonDatas.forEach(jsonData => {
-                const parsedData = JSON.parse(jsonData);
-                switch (parsedData.type) {
-                    case types_js_1.DataType.KNOWN_HOSTS:
-                        this.receiveKnownHosts(parsedData);
+            jsons.forEach(json => {
+                const parsedJson = JSON.parse(json);
+                switch (parsedJson.type) {
+                    // When this peer receives an introduction from another peer
+                    case types_js_1.DataType.PRESENTATION:
+                        const { port } = parsedJson.content;
+                        const senderName = parsedJson.senderName;
+                        this.receivePresentation(socket, senderName, port);
                         break;
-                    case types_js_1.DataType.PEER_INTRODUCTION:
-                        this.receiveIntroduction(socket, parsedData);
+                    // When this peer is informed that its connection has been closed
+                    case types_js_1.DataType.CONNECTION_CLOSED:
+                        const { message } = parsedJson.content;
+                        this.destroySocket(socket, message);
                         break;
-                    case types_js_1.DataType.CLOSED_CONNECTION:
-                        this.destroySocket(socket, parsedData.content);
+                    // When this peer receives information from the network
+                    case types_js_1.DataType.NETWORK_INFORMATION:
+                        const { network } = parsedJson.content;
+                        this.receiveNetworkInformation(network);
+                        break;
+                    // When this peer receives a request to send network information
+                    case types_js_1.DataType.REQUEST_NETWORK_INFORMATION:
+                        this.sendNetworkInformation(socket, this.network);
                         break;
                 }
-                this.onDataCallback?.(parsedData, socket);
+                this.onDataCallback?.(parsedJson, socket);
             });
         });
     };
@@ -305,13 +250,23 @@ class Peer {
         the client socket send data */
         this.listenClientData(socket);
     };
+    /** Checks if the name passed is being used by some known host */
+    isNameUsed = (name) => {
+        for (let i = 0; i < this.network.hosts.length; i++) {
+            if (this.network.hosts[i].name === name) {
+                return true;
+            }
+        }
+        // Lastly, if the name is not the same as this peer, then return false
+        return name === this.name;
+    };
     /** The given callback is called every time this peer receives a connection */
     onReceiveConnection(callback) {
         this.onReceiveConnectionCallback = callback;
     }
     /** The given callback is called every time this peer updates its own state */
-    onReceiveState(callback) {
-        this.onReceiveStateCallback = callback;
+    onEnterNetwork(callback) {
+        this.onEnterNetworkCallback = callback;
     }
     /** The given callback is called every time a peer disconnects from the network */
     onDisconnect(callback) {

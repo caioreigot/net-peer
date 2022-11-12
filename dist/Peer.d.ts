@@ -1,22 +1,18 @@
 import net from 'net';
-import { ReceiveConnectionCallback, ReceiveStateCallback, DisconnectCallback, DataCallback, PeerData } from './types.js';
+import { ReceiveConnectionCallback, EnterNetworkCallback, DisconnectCallback, DataCallback, PeerData, Network } from './types.js';
 export default class Peer {
-    /** State that will be shared among all peers */
-    state: any;
     /** Unique peer name */
     name: string;
     /** Port on which this peer will listen for connections */
     port: number;
+    /** State that will be shared among all peers */
+    network: Network;
     /** TCP server of this peer */
     private server;
     /** Array containing all connections established by this peer */
     private connections;
-    /** Array of all hosts known to this peer */
-    private knownHosts;
-    /** Array of tasks that will be executed in queue (first in first out) */
-    private taskQueue;
     private onReceiveConnectionCallback;
-    private onReceiveStateCallback;
+    private onEnterNetworkCallback;
     private onDisconnectCallback;
     private onDataCallback;
     constructor(name: string, state?: any);
@@ -27,44 +23,35 @@ export default class Peer {
      * with Error object if an error has occurred
     */
     listen: (port?: number) => Promise<number>;
-    private handleDisconnection;
     /** Remove socket from arrays of known connections and hosts */
-    private forgetConnection;
-    /** Send hosts known to this
-    peer to the client peer */
-    private sendKnownHostsTo;
-    /** Send the state of this peer to the client peer */
-    private sendStateTo;
+    private handleDisconnection;
     /**
      * Try to connect to a peer using the given ip and port
      * @returns {Promise<void>} Returns a Promise that is resolved if
      * the connection was successfully established or rejected otherwise
     */
     connect: (host: string, port: number, timeoutInSeconds?: number) => Promise<void>;
-    private addConnection;
-    /** Checks if the given host is among the known hosts array */
-    private isKnownHost;
-    /** Checks if the name passed is being used by some known host */
-    private isNameUsed;
-    /** Receives known hosts from another peer */
-    private receiveKnownHosts;
-    /** Set the state received by another peer */
-    private receiveState;
+    /** Receives the network information from another peer */
+    private receiveNetworkInformation;
     /** Receive the name of a peer and the port it is listening on */
-    private receiveIntroduction;
+    private receivePresentation;
+    /** Send the network state to the client peer */
+    private sendNetworkInformation;
     private destroySocket;
     /** Send this peer's server name and port to another peer */
-    private introduceMyselfTo;
+    private sendPresentation;
     /** Send data to a single peer */
     sendData: (socket: net.Socket, data: PeerData) => void;
     /** Send data to all known peers (this one is not included) */
     broadcast: (type: string, content: any) => void;
     private listenClientData;
     private addSocketListeners;
+    /** Checks if the name passed is being used by some known host */
+    private isNameUsed;
     /** The given callback is called every time this peer receives a connection */
     onReceiveConnection(callback: ReceiveConnectionCallback): void;
     /** The given callback is called every time this peer updates its own state */
-    onReceiveState(callback: ReceiveStateCallback): void;
+    onEnterNetwork(callback: EnterNetworkCallback): void;
     /** The given callback is called every time a peer disconnects from the network */
     onDisconnect(callback: DisconnectCallback): void;
     /** The given callback is called every time some data is transmitted to this peer */

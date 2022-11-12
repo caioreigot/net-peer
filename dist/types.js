@@ -3,8 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.DataType = void 0;
 var DataType;
 (function (DataType) {
-    DataType["PEER_INTRODUCTION"] = "@PEER_INTRODUCTION";
-    DataType["CLOSED_CONNECTION"] = "@CLOSED_CONNECTION";
-    DataType["KNOWN_HOSTS"] = "@KNOWN_HOSTS";
-    DataType["STATE"] = "@STATE";
+    DataType["PRESENTATION"] = "@PRESENTATION";
+    DataType["CONNECTION_CLOSED"] = "@CONNECTION_CLOSED";
+    DataType["NETWORK_INFORMATION"] = "@NETWORK_INFORMATION";
+    DataType["REQUEST_NETWORK_INFORMATION"] = "@REQUEST_NETWORK_INFORMATION";
 })(DataType = exports.DataType || (exports.DataType = {}));
