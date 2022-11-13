@@ -1,14 +1,8 @@
 {
   "name": "net-peer",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "A P2P multi-directional communication module for exchanging data, built on top of the Node.js net package",
   "main": "dist/index.js",
-  "exports": {
-    ".": {
-      "import": "./esmodules.mjs",
-      "require": "./commonjs.cjs"
-    }
-  },
   "scripts": {
     "build": "rm -rf dist/ && tsc"
   },

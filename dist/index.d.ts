@@ -1,5 +1,4 @@
 import Peer from "./Peer.js";
-import { PeerData, Host } from './types';
-export { PeerData, Host, };
-export default Peer;
+import { PeerData } from './types';
+export { Peer, PeerData, };
 //# sourceMappingURL=index.d.ts.map

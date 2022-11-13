@@ -13,9 +13,9 @@ import {
 export default class Peer {
 
   /** Unique peer name */
-  public name: string;
+  public readonly name: string;
   /** Port on which this peer will listen for connections */
-  public port: number = 0;
+  private port: number = 0;
   /** The network information */
   public network: Network = { hosts: [], state: null };
   /** TCP server of this peer */

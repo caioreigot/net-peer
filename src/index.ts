@@ -1,13 +1,7 @@
 import Peer from "./Peer.js";
-
-import {
-  PeerData,
-  Host,
-} from './types';
+import { PeerData } from './types';
 
 export {
+  Peer,
   PeerData,
-  Host,
 }
-
-export default Peer;
