@@ -2,7 +2,7 @@ import { Socket } from 'net';
 
 export type ReceiveConnectionCallback = (peerName: string, socket: Socket) => void;
 export type EnterNetworkCallback = (state: any) => void;
-export type DisconnectCallback = (host: Host, socket: Socket) => void;
+export type DisconnectCallback = (peerName: string, socket: Socket) => void;
 export type DataCallback = (data: PeerData, socket: Socket) => void;
 
 export interface Host {
@@ -20,6 +20,11 @@ export interface Network {
 export interface PeerData {
   type: string;
   content: any;
+}
+
+export interface PeerPresentation {
+  port: number,
+  needNetworkInformation: boolean,
 }
 
 export enum DataType {

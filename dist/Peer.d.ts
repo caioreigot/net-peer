@@ -5,7 +5,7 @@ export default class Peer {
     name: string;
     /** Port on which this peer will listen for connections */
     port: number;
-    /** State that will be shared among all peers */
+    /** The network information */
     network: Network;
     /** TCP server of this peer */
     private server;
@@ -33,9 +33,9 @@ export default class Peer {
     connect: (host: string, port: number, timeoutInSeconds?: number) => Promise<void>;
     /** Receives the network information from another peer */
     private receiveNetworkInformation;
-    /** Receive the name of a peer and the port it is listening on */
+    /** Receive the name of a peer and the presentation with the port it is listening on */
     private receivePresentation;
-    /** Send the network state to the client peer */
+    /** Send the network information to the client peer */
     private sendNetworkInformation;
     private destroySocket;
     /** Send this peer's server name and port to another peer */
@@ -48,10 +48,10 @@ export default class Peer {
     private addSocketListeners;
     /** Checks if the name passed is being used by some known host */
     private isNameUsed;
+    /** The given callback is called when the peer connects to everyone on the network  */
+    onEnterNetwork(callback: EnterNetworkCallback): void;
     /** The given callback is called every time this peer receives a connection */
     onReceiveConnection(callback: ReceiveConnectionCallback): void;
-    /** The given callback is called every time this peer updates its own state */
-    onEnterNetwork(callback: EnterNetworkCallback): void;
     /** The given callback is called every time a peer disconnects from the network */
     onDisconnect(callback: DisconnectCallback): void;
     /** The given callback is called every time some data is transmitted to this peer */
