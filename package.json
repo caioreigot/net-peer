@@ -1,0 +1,26 @@
+{
+  "name": "net-peer-example-project",
+  "version": "1.0.0",
+  "description": "A project for example usage of the net-peer package",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/caioreigot/net-peer.git"
+  },
+  "keywords": [],
+  "author": "Caio Costa",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/caioreigot/net-peer/issues"
+  },
+  "homepage": "https://github.com/caioreigot/net-peer#readme",
+  "devDependencies": {
+    "electron": "^21.2.2"
+  },
+  "dependencies": {
+    "net-peer": "^2.2.0"
+  }
+}
