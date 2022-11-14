@@ -17,7 +17,7 @@ Think that you opened a room in some co-op game and called that friend of yours 
 npm install net-peer
 ```
 
-- Import [Peer](src/index.ts) from the **net-peer** package:
+- Import [Peer](src/Peer.ts) from the **net-peer** package:
 ```js
 // ESModules
 import { Peer } from 'net-peer';
