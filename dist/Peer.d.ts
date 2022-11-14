@@ -2,9 +2,9 @@ import net from 'net';
 import { ReceiveConnectionCallback, EnterNetworkCallback, DisconnectCallback, DataCallback, PeerData, Network } from './types.js';
 export default class Peer {
     /** Unique peer name */
-    name: string;
+    readonly name: string;
     /** Port on which this peer will listen for connections */
-    port: number;
+    private port;
     /** The network information */
     network: Network;
     /** TCP server of this peer */

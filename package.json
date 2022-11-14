@@ -1,6 +1,6 @@
 {
   "name": "net-peer",
-  "version": "2.2.1",
+  "version": "2.2.2",
   "description": "A P2P multi-directional communication module for exchanging data, built on top of the Node.js net package",
   "main": "dist/index.js",
   "scripts": {
@@ -14,7 +14,10 @@
     "node",
     "p2p",
     "net",
-    "tcp"
+    "tcp",
+    "network",
+    "peer-to-peer",
+    "socket"
   ],
   "author": "Caio Costa",
   "license": "MIT",
