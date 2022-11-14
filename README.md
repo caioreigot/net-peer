@@ -57,8 +57,8 @@ peer.listen()
 ```js
 // The first parameter is the ip of the server and the second parameter is the port it listens on
 peer.connect('127.0.0.1', 3000)
-  .then(() => console.log('I connected! But I'm not part of the network yet.'))
-  .catch(error => console.warn('I couldn't connect!', error));
+  .then(() => console.log("I connected! But I'm not part of the network yet."))
+  .catch(error => console.warn("I couldn't connect!", error));
 ```
 
 - To transmit data to all members of the network, use the **broadcast** function:
