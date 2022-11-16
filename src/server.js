@@ -16,7 +16,7 @@ function bootstrap(webContents) {
   /* Generating a random ID for simplicity, you can
   ask the user to enter a nickname and use it */
   const uniqueName = Math.floor(
-    new Date().valueOf() * Math.random()
+    new Date().valueOf() * (Math.random() + 1)
   ).toString();
 
   // Using the Peer class to create a new user on the network
