@@ -1,8 +1,8 @@
 {
-  "name": "net-peer-example-project",
+  "name": "net-peer-snake-online",
   "version": "1.0.0",
   "description": "A project for example usage of the net-peer package",
-  "main": "src/server.js",
+  "main": "src/main.js",
   "scripts": {
     "start": "electron ."
   },

@@ -5,20 +5,28 @@
     <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'">
     <link rel="stylesheet" href="style.css">
-    <title>Net Peer</title>
+    <title>Snake</title>
   </head>
   <body>
+    <!-- Enter Nickname Dialog -->
+    <div id="enter-nickname-modal">
+      <div>
+        <input id="nickname-input" type="text" placeholder="Choose your nickname">
+        <button id="ready-button">Ready</button>
+      </div>
+    </div>
+    
     <main>
       <!-- Game -->
-      <canvas id="screen" width="16" height="9"></canvas>
+      <canvas id="screen" width="41" height="41"></canvas>
       
-      <!-- Chat -->
-      <div id="chat-wrapper">
-        <div id="messages"></div>
-        <input type="text" placeholder="Message">
+      <!-- Player List -->
+      <div id="player-list">
+        <h1>Jogadores</h1>
       </div>
-
-      <script type="module" src="game/index.js"></script>
     </main>
+    
+    <script type="module" src="game/index.js"></script>
+    <script type="module" src="game/nicknameDialog.js"></script>
   </body>
 </html>

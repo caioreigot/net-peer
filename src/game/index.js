@@ -1,41 +1,58 @@
-import KeyboardListener from "./KeyboardListener.js";
-import Chat from "./Chat.js";
+import KeyboardListener from './KeyboardListener.js';
 
 const { ipcRenderer } = window.require('electron');
 const screen = document.getElementById('screen');
 const context = screen.getContext('2d');
 
 const keyboardListener = new KeyboardListener();
-const chat = new Chat(document.getElementById('messages'));
-const messageInput = document.querySelector('#chat-wrapper input');
-
-// See keys pressed while user types in chat input
-messageInput.onkeypress = (event) => {
-  // If the key pressed was "Enter" && the text entered is not empty
-  if (event.key === 'Enter' && messageInput.value.trim()) {
-    ipcRenderer.send('message-sended', messageInput.value);
-    messageInput.value = '';
-  }
-}
 
 // Watch the keys pressed
 keyboardListener.subscribe((keyPressed) => {
-  // If user is not typing in chat input then he is trying to move player
-  if (messageInput !== document.activeElement) {
-    ipcRenderer.send('key-pressed', keyPressed);
+  const direction = (function() {
+    switch (keyPressed) {
+      case 'ArrowUp':
+      case 'w':
+        return { x: 0, y: -1 };
+      case 'ArrowLeft':
+      case 'a':
+        return { x: -1, y: 0 };
+      case 'ArrowDown':
+      case 's':
+        return { x: 0, y: 1 };
+      case 'ArrowRight':
+      case 'd':
+        return { x: 1, y: 0 };
+      default:
+        return null;
+    }
+  })();
+  
+  if (direction) {
+    ipcRenderer.send('change-snake-direction', direction);
   }
 });
 
-function render(gameState) {
+function render(state) {
   // Clear the screen before rendering again
   context.clearRect(0, 0, screen.width, screen.height);
 
-  // Renders all players that are in the game state
-  Object.values(gameState.players).forEach((player) => {    
-    const { color, coords, width, height } = player;
+  // Renders all snakes that are in the game state
+  Object.values(state.snakes).forEach((snake) => {    
+    const { color, body, width, height } = snake;
     context.fillStyle = color;
-    context.fillRect(coords.x, coords.y, width, height);
-  })
+
+    for (let i = 0; i < body.length; i++) {
+      const { x, y } = body[i];
+      context.fillRect(x, y, width, height);
+    }
+  });
+
+  // Renders all fruits that are in the game state
+  state.fruitCoords.forEach((fruitCoord) => {    
+    const { x, y } = fruitCoord;
+    context.fillStyle = '#ff453c';
+    context.fillRect(x, y, 1, 1);
+  });
 }
 
 // When it receives the request to render the screen from the server
@@ -43,12 +60,20 @@ ipcRenderer.on('render', (event, gameState) => {
   render(gameState);
 });
 
-// When it receives the request from the server to render a log in the chat
-ipcRenderer.on('system-log', (event, logMessage) => {
-  chat.sendLog(logMessage);
+ipcRenderer.on('add-nickname-to-list', (event, nickname) => {
+  const playerList = document.querySelector('#player-list');
+  const span = document.createElement('span');
+  span.innerText = nickname;
+
+  playerList.append(span);
 });
 
-// When it receives the request from the server to render a message in the chat
-ipcRenderer.on('message-sended', (event, senderName, messageContent) => {
-  chat.sendMessage(senderName, messageContent);
+ipcRenderer.on('remove-nickname-from-list', (event, nickname) => {
+  const playerList = document.querySelector('#player-list');
+  
+  for (let i = 0; i < playerList.children.length; i++) {
+    if (playerList.children[i].innerText == nickname) {
+      playerList.children[i].remove();
+    }
+  }
 });
